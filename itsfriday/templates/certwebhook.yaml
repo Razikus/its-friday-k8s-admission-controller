@@ -1,0 +1,104 @@
+{{- $k8sMinor := (include "k8s-version-minor" .) -}}
+{{- $altNames := list -}}
+{{- $altNames = append $altNames (printf "%s-svc" .Chart.Name) -}}
+{{- $altNames = append $altNames (printf "%s-svc.%s" .Chart.Name .Release.Namespace) -}}
+{{- $altNames = append $altNames (printf "%s-svc.%s.svc" .Chart.Name .Release.Namespace) -}}
+{{- $altNames = append $altNames (printf "%s-svc.%s.svc.cluster.local" .Chart.Name .Release.Namespace) -}}
+{{- $certs := genSelfSignedCert (printf "%s-svc.%s.svc" .Chart.Name .Release.Namespace) nil $altNames 36500 -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Chart.Name }}-tls
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "itsfriday.labels" . | nindent 4 }}
+type: Opaque
+data:
+  tls.crt: {{ default ($certs.Cert | b64enc) (include "getInstalledTLSCert" .) }}
+  tls.key: {{ default ($certs.Key | b64enc) (include "getInstalledTLSKey" .) }}
+---
+{{ if lt ($k8sMinor | int) 17 }}
+apiVersion: admissionregistration.k8s.io/v1beta1
+{{ else }}
+apiVersion: admissionregistration.k8s.io/v1
+{{ end }}
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: {{ .Chart.Name }}-webhook
+  labels:
+    {{- include "itsfriday.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-delete-policy": before-hook-creation, hook-succeeded, hook-failed
+webhooks:
+  - name: {{ .Chart.Name }}-svc.{{ .Release.Namespace }}.svc
+    failurePolicy: Ignore
+    clientConfig:
+      service:
+        name: {{ .Chart.Name }}-svc
+        namespace: {{ .Release.Namespace }}
+        path: /validate
+      caBundle: {{ default ($certs.Cert | b64enc) (include "getInstalledTLSCert" .) }}
+    rules: []
+    sideEffects: None
+    {{- if lt ($k8sMinor | int) 17 }}
+    admissionReviewVersions: ["v1beta1"]
+    {{- else }}
+    admissionReviewVersions: ["v1"]
+    {{- end }}
+---
+{{ if lt ($k8sMinor | int) 17 -}}
+apiVersion: admissionregistration.k8s.io/v1beta1
+{{ else -}}
+apiVersion: admissionregistration.k8s.io/v1
+{{ end -}}
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: {{ .Chart.Name }}-webhook
+  labels:
+    {{- include "itsfriday.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install, post-upgrade, post-rollback
+webhooks:
+  - name: {{ .Chart.Name }}-svc.{{ .Release.Namespace }}.svc
+    failurePolicy: {{ .Values.failurePolicy | default "Fail" }}
+    clientConfig:
+      service:
+        name: {{ .Chart.Name }}-svc
+        namespace: {{ .Release.Namespace }}
+        path: /validate
+      caBundle: {{ default ($certs.Cert | b64enc) (include "getInstalledTLSCert" .) }}
+    rules:
+      - operations: ["CREATE", "UPDATE"]
+        apiGroups: ["*"]
+        apiVersions: ["*"]
+        resources: ["pods", "deployments", "replicationcontrollers", "replicasets", "daemonsets", "statefulsets", "jobs", "cronjobs"]
+    sideEffects: None
+    {{- if gt ($k8sMinor | int) 13 }}
+    timeoutSeconds: 30
+    {{- end }}
+    {{- if lt ($k8sMinor | int) 17 }}
+    admissionReviewVersions: ["v1beta1"]
+    {{- else }}
+    admissionReviewVersions: ["v1"]
+    {{- end }}
+    {{- if .Values.namespacedValidation }}
+    {{- if .Values.namespacedValidation.enabled }}
+    namespaceSelector:
+      matchExpressions:
+      - key: itsfriday/webhookenabled
+    {{- if not .Values.onlyMarkedNamespaces.mode}}
+        operator: NotIn
+        values:
+          - ignore
+    {{- else if eq .Values.onlyMarkedNamespaces.mode "ignore"}}
+        operator: NotIn
+        values:
+          - ignore
+    {{- else if eq .Values.onlyMarkedNamespaces.mode "validate"}}
+        operator: In
+        values:
+          - validate
+   {{- end }}
+   {{- end }}
+   {{- end }}

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    {{- include "itsfriday.labels" . | nindent 4 }}
+  name: {{ .Chart.Name }}-deployment
+  namespace: "{{$.Release.Namespace}}"
+spec:
+  replicas: {{ .Values.replicasCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "itsfriday.name" . }}
+      app.kubernetes.io/instance: {{ .Chart.Name }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "itsfriday.name" . }}
+        app.kubernetes.io/instance: {{ .Chart.Name }}
+    spec:
+      serviceAccountName: {{ .Chart.Name }}-serviceaccount
+      containers:
+        - env:
+            - name: APP_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          image: {{$.Values.images.itsfriday }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 443
+              scheme: HTTPS
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 443
+              scheme: HTTPS
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          imagePullPolicy: Always
+          name: {{ .Chart.Name }}
+          resources: {}
+          volumeMounts:
+            - name: {{ .Chart.Name }}-certs
+              mountPath: /app/certs
+              readOnly: true
+      restartPolicy: Always
+      volumes:
+        - name: {{ .Chart.Name }}-certs
+          secret:
+            secretName: {{ .Chart.Name }}-tls
+status: {}
