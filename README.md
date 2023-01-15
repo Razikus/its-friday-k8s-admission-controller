@@ -21,5 +21,7 @@ helm install itsfriday https://github.com/Razikus/its-friday-k8s-admission-contr
 
 Real reason is that its very easy to clone this repo, and just replace implementation of controller to do real case - change image, check weather, allow deployments only in nights.
 
+Everything is prepared and not overcomplicated - automatic creation of certificates, automatic webhook registration.
+
 
 
