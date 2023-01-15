@@ -9,6 +9,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("itsfriday-controller")
 PODNAME = os.environ.get("APP_POD_NAME", "NOT_A_POD")
 
+MYFRIDAY = int(os.environ.get("MY_FRIDAY", "4"))
 
 @app.get("/health")
 async def health():
@@ -39,7 +40,7 @@ def getResponse(uid: str, status: bool, apiVersion: str, message: str):
 
 @app.post("/validate")
 async def validate(req: Request):
-    ISFRIDAY = datetime.today().weekday() == 4
+    ISFRIDAY = datetime.today().weekday() == MYFRIDAY
     jsoned = await req.json()
     reqOfUid = jsoned["request"]["uid"]
     logger.info(f"Received request {reqOfUid}")

@@ -9,3 +9,5 @@ images:
   itsfriday: razikus/its-friday-k8s-admission-controller:1.0.0
 service:
   port: 443
+envs:
+  MY_FRIDAY: 4

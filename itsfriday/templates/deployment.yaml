@@ -22,6 +22,8 @@ spec:
       serviceAccountName: {{ .Chart.Name }}-serviceaccount
       containers:
         - env:
+            - name: MY_FRIDAY
+              value: {{$.Values.envs.MY_FRIDAY | quote }}
             - name: APP_POD_NAME
               valueFrom:
                 fieldRef:
