@@ -6,7 +6,7 @@ onlyMarkedNamespaces: # Only namespaces with itsfriday/webhookenabled label set 
                    # if ingnore - only namespaces with itsfriday/webhookenabled=ignore would be ignored
 replicasCount: 3
 images:
-  itsfriday: razikus/its-friday-k8s-admission-controller:1.0.0
+  itsfriday: razikus/its-friday-k8s-admission-controller:1.0.1
 service:
   port: 443
 envs:
