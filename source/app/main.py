@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+import calendar
 from datetime import datetime
 import logging
 import os
@@ -9,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("itsfriday-controller")
 PODNAME = os.environ.get("APP_POD_NAME", "NOT_A_POD")
 
-MYFRIDAY = int(os.environ.get("MY_FRIDAY", "4"))
+MYFRIDAYS = [ int(x) for x in os.environ.get("MY_FRIDAYS", "4").split(",") ]
 
 @app.get("/health")
 async def health():
@@ -40,7 +41,8 @@ def getResponse(uid: str, status: bool, apiVersion: str, message: str):
 
 @app.post("/validate")
 async def validate(req: Request):
-    ISFRIDAY = datetime.today().weekday() == MYFRIDAY
+    ISFRIDAY = datetime.today().weekday() in MYFRIDAYS
+    DAYOFWEEK = calendar.day_name[datetime.today().weekday()]
     jsoned = await req.json()
     reqOfUid = jsoned["request"]["uid"]
     logger.info(f"Received request {reqOfUid}")
@@ -50,9 +52,9 @@ async def validate(req: Request):
         logger.info(f"{PODNAME}: Accepted request {reqOfUid}, owner references found (automated job)")
         return getResponse(reqOfUid, True, apiVersion, "Owner found, automaticaly scheduled")
     if(ISFRIDAY):
-        logger.info(f"{PODNAME}: Rejected request {reqOfUid}, ITS FRIDAY!")
-        return getResponse(reqOfUid, False, apiVersion, "ITS FRIDAY!")
+        logger.info(f"{PODNAME}: Rejected request {reqOfUid}, ITS {DAYOFWEEK}!")
+        return getResponse(reqOfUid, False, apiVersion, "ITS {DAYOFWEEK}!")
     else:
-        logger.info(f"{PODNAME}: Accepted request {reqOfUid}, Its not friday!")
-        return getResponse(reqOfUid, True, apiVersion, "Its not friday. Go!")
+        logger.info(f"{PODNAME}: Accepted request {reqOfUid}, Its not friday (nor any other blocked day)!")
+        return getResponse(reqOfUid, True, apiVersion, "Its not a blocked day. Go!")
 

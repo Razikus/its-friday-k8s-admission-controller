@@ -10,4 +10,4 @@ images:
 service:
   port: 443
 envs:
-  MY_FRIDAY: 4
+  MY_FRIDAY: "4"
