@@ -1,4 +1,4 @@
-# NO MORE DEPLOYMENTS IN FRIDAY (now written Rust!)
+# NO MORE DEPLOYMENTS IN FRIDAY (now written in Rust!)
 
 
 It does what it says. Blocks new deployments in friday on admission controller level.
