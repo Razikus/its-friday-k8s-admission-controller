@@ -4,9 +4,9 @@ onlyMarkedNamespaces: # Only namespaces with itsfriday/webhookenabled label set 
   mode: "validate" # validate or ignore
                    # if validate - only namespaces with itsfriday/webhookenabled=validate would be checked
                    # if ingnore - only namespaces with itsfriday/webhookenabled=ignore would be ignored
-replicasCount: 3
+replicasCount: 2
 images:
-  itsfriday: razikus/its-friday-k8s-admission-controller:1.0.1
+  itsfriday: razikus/its-friday-k8s-admission-controller:rust1.0.0
 service:
   port: 443
 envs:
